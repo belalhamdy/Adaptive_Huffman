@@ -3,7 +3,7 @@ package com.company;
 import java.util.Scanner;
 
 public class Main {
-    static Scanner in = new Scanner(System.in);
+    private static Scanner in = new Scanner(System.in);
     public static void main(String[] args) {
         System.out.println("Welcome to Adaptive huffman Encoder/Decoder");
         while (true) {
@@ -15,7 +15,7 @@ public class Main {
                 try {
                     System.out.println(Adaptive_Huffman.Encode(text));
                 } catch (Exception ex) {
-                    System.out.println(ex);
+                    System.out.println(ex.getMessage());
                     continue;
                 }
             }
@@ -23,9 +23,9 @@ public class Main {
                 System.out.println("Enter the encoded bits to decode");
                 String text = in.nextLine();
                 try {
-                    System.out.println(Adaptive_Huffman.Decode(text));
+                    //System.out.println(Adaptive_Huffman.Decode(text));
                 } catch (Exception ex) {
-                    System.out.println(ex);
+                    System.out.println(ex.getMessage());
                     continue;
                 }
             }

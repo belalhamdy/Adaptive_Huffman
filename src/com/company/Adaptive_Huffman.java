@@ -1,12 +1,10 @@
 package com.company;
 
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 public class Adaptive_Huffman {
-    final static char NYT = '\r';
+    final static char NYTCode = '\r';
     final static short StartId = 747; // -> lucky number
     final static short MAX = StartId*2;
      private static class Node{
@@ -26,21 +24,70 @@ public class Adaptive_Huffman {
     }
     static boolean[] isTaken = new boolean[MAX];
     static Node root;
-    public static String Encode(String text)
-    {
+    static Node NYT;
+    public static String Encode(String text)throws Exception {
         init();
+        StringBuilder ret = new StringBuilder();
         for (int i = 0 ; i<text.length();++i)
         {
-
+            char letter = text.charAt(i);
+            Node curr = find(letter);
+            if (curr == null)
+            {
+                ret.append(NYT.code).append(asciiToBinary(letter));
+                curr = insert(NYT,letter);
+                update(curr.parent);
+            }
+            else
+            {
+                ret.append(curr.code);
+                update(curr);
+            }
+            ++curr.freq;
         }
-        return "";
+        return ret.toString();
     }
-    public static String Decode(String text)
-    {
-        init();
-
-        return "";
-    }
+//    public static String Decode(String text) throws Exception {
+//        init();
+//        String prefix;
+//        try {
+//            prefix = text.substring(0,8);
+//        }
+//        catch (Exception ex)
+//        {
+//            throw new Exception("Invalid Input.. Please enter valid data");
+//        }
+//        char letter = binaryToAscii(prefix);
+//        StringBuilder ret = new StringBuilder(letter);
+//        prefix = "";
+//        Node curr;
+//        ArrayList<Node> prefixes;
+//        for (int i = 8 ; i<text.length() ; ++i)
+//        {
+//            prefix+=text.charAt(i);
+//            prefixes = find(prefix);
+//            if (prefixes.size() == 0) throw new Exception("Invalid Input.. Please enter valid data");
+//            else if (prefixes.size() == 1)
+//            {
+//                curr = prefixes.get(0);
+//                if (curr.symbol != NYTCode) // try to exchange it with if (curr != NYT)
+//                {
+//                    //@TODO already inserted insertion
+//
+//                }
+//                else
+//                {
+//                    //@TODO first insertion
+//                }
+//            }
+//
+//        }
+//        if (prefix != null)
+//        {
+//
+//        }
+//        return ret.toString();
+//    }
     private static String asciiToBinary (char c)
     {
         return Integer.toBinaryString(c);
@@ -51,23 +98,85 @@ public class Adaptive_Huffman {
     }
     private static void init() // initialize data
     {
-        root = new Node(NYT,StartId,"");
+        root = NYT = new Node(NYTCode,StartId,"");
         Arrays.fill(isTaken,false);
     }
     private static Node insert(Node curr,char c)
     {
         Node data = new Node(c,getId(curr.id),curr.code+"1");
-        Node nyt = new Node(NYT,getId(data.id),curr.code+"0");
+        Node nyt = new Node(NYTCode,getId(data.id),curr.code+"0");
         ++data.freq;
+        ++curr.freq; // NYT inc freq
         curr.left = nyt;
         curr.right = data;
         data.parent = nyt.parent = curr;
-        return curr;
+        NYT = nyt;
+        return curr.right;
     }
     private static Node update(Node curr)
     {
-
+        while (curr != root)
+        {
+            curr = SwapIfYouCan(curr);
+        }
+        return curr;
     }
+    private static Node SwapIfYouCan(Node req)
+    {
+        Queue<Node> q = new LinkedList<>();
+        q.add(root.right);
+        q.add(root.left);
+        while (!q.isEmpty())
+        {
+            Node curr = q.remove();
+            q.add(curr.right);
+            q.add(curr.left);
+            if (canBeSwapped(req,curr))
+            {
+                swap(req,curr);
+                break;
+            }
+        }
+        return req.parent;
+    }
+    private static Node swap (Node from,Node to) // returns the from node
+    {
+        Node temp = new Node(from.symbol,from.id,from.code);
+        temp.freq = from.freq;
+        temp.right = from.right;
+        temp.left = from.left;
+        temp.parent = from.parent;
+
+        from.id = to.id;
+        from.code = to.code;
+        from.freq = to.freq;
+        from.right = to.right;
+        from.left = to.left;
+        from.parent = to.parent;
+
+        to.id = temp.id;
+        to.code = temp.code;
+        to.freq = temp.freq;
+        to.right = temp.right;
+        to.left = temp.left;
+        to.parent = temp.parent;
+
+        return from;
+    }
+    private static boolean canBeSwapped(Node from , Node to)
+    {
+        return (from.id < to.id && from.freq >= to.freq && from.parent != to && to != root);
+    }
+//    private static ArrayList<Node> find (String s , Node curr)
+//    {
+//        //@TODO you must make this function returns list of nodes that can be prefix for that
+//        if (s.isEmpty()) return curr;
+//
+//    }
+//    private static ArrayList<Node> find (String s)
+//    {
+//        return find(s,root);
+//    }
     private static Node find (char s , Node curr)
     {
         if (curr.symbol == s) return curr;
@@ -87,7 +196,6 @@ public class Adaptive_Huffman {
         isTaken[last] = true;
         return last;
     }
-
     public static void PrintTree(PrintStream out)
     {
         List<List<String>> lines = new ArrayList<>();
