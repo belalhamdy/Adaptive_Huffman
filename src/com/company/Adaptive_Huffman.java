@@ -11,7 +11,7 @@ public class Adaptive_Huffman {
     final static char NYTCode = '\r';
     final static short StartId = 747; // -> lucky number
     final static short MAX = StartId * 2;
-
+    final static int ASCIISIZE = 7;
     private static class Node {
         public String code; // Code of encoding value of that symbole
         public int freq, id;
@@ -46,11 +46,9 @@ public class Adaptive_Huffman {
                 ret.append(NYT.code).append(asciiToBinary(letter));
                 curr = insert(NYT, letter);
                 update(curr.parent);
-                updateCodes();
             } else {
                 ret.append(curr.code);
                 update(curr);
-                updateCodes();
             }
             //PrintTree(System.out); // -> For Debugging
         }
@@ -61,15 +59,17 @@ public class Adaptive_Huffman {
         init();
         String prefix;
         try {
-            prefix = text.substring(0, 8);
+            prefix = text.substring(0, ASCIISIZE);
         } catch (Exception ex) {
             throw new Exception("Invalid Input.. Please enter valid data");
         }
         char letter = binaryToAscii(prefix);
-        StringBuilder ret = new StringBuilder(letter);
+        StringBuilder ret = new StringBuilder();
+        ret.append(letter);
         prefix = "";
-        Node curr;
-        for (int i = 8; i < text.length(); ++i) {
+        Node curr ;
+        insert(NYT,letter);
+        for (int i = ASCIISIZE; i < text.length(); ++i) {
             prefix += text.charAt(i);
             curr = find(prefix);
             int nodeStatus = NodeCase(curr);
@@ -77,25 +77,31 @@ public class Adaptive_Huffman {
             else if (nodeStatus == 1) {
                 if (curr.symbol != NYTCode) // try to exchange it with if (curr != NYT)
                 {
-                    //@TODO already inserted
-
+                    ret.append(curr.symbol);
+                    update(curr);
                 } else {
-                    //@TODO first insertion
+                    try {
+                        prefix = text.substring(i+1, i+1+ASCIISIZE);
+                        i+=(ASCIISIZE);
+                        letter = binaryToAscii(prefix);
+                        curr = insert(NYT,letter);
+                        ret.append(letter);
+                        update(curr.parent);
+                    } catch (Exception ex) {
+                        throw new Exception("Invalid Input.. Please enter valid data");
+                    }
                 }
+                prefix = "";
             }
 
         }
-        if (prefix != null) {
-
+        if (!prefix.isEmpty()) {
+            throw new Exception("Invalid Input.. Please enter valid data");
         }
         return ret.toString();
     }
 
     private static String asciiToBinary(char c) {
-        if (c == 'a') return "00";
-        if (c == 'b') return "01";
-        if (c == 'c') return "10";
-        // remove above if you won't to implement lecture example
         return Integer.toBinaryString(c);
     }
 
@@ -142,6 +148,7 @@ public class Adaptive_Huffman {
             if (curr.left != null) q.add(curr.left);
             if (canBeSwapped(req, curr)) {
                 swap(req, curr);
+                updateCodes();
                 break;
             }
         }
@@ -195,8 +202,8 @@ public class Adaptive_Huffman {
     private static Node find(Node curr, String s) {
         Node ret = null;
         if (s.isEmpty()) ret = curr;
-        if (s.charAt(0) == '0') ret = find(curr.left,s.substring(1));
-        if (s.charAt(0) == '1') ret = find(curr.right,s.substring(1));
+        else if (s.charAt(0) == '0') ret = find(curr.left,s.substring(1));
+        else if (s.charAt(0) == '1') ret = find(curr.right,s.substring(1));
         return ret;
     }
 
@@ -249,7 +256,6 @@ public class Adaptive_Huffman {
 //    }
 //    private static void updateCodes()
 //    {
-//        // @TODO Enhance this function
 //        Queue<Node> q = new LinkedList<>();
 //        q.add(root.right);
 //        q.add(root.left);
