@@ -1,203 +1,267 @@
 package com.company;
 
+import org.jetbrains.annotations.NotNull;
+
+import java.awt.*;
 import java.io.PrintStream;
 import java.util.*;
+import java.util.List;
 
 public class Adaptive_Huffman {
     final static char NYTCode = '\r';
     final static short StartId = 747; // -> lucky number
-    final static short MAX = StartId*2;
-     private static class Node{
+    final static short MAX = StartId * 2;
+
+    private static class Node {
         public String code; // Code of encoding value of that symbole
-        public int freq,id;
-        public Node parent,left,right;
+        public int freq, id;
+        public Node parent, left, right;
         char symbol; // NYT is defined as "\r" (carriage return) -> can be changed later
 
-        Node(char symbol,int id, String code)
-        {
+        Node(char symbol, int id, String code) {
             this.id = id;
             this.code = code;
             this.symbol = symbol;
             freq = 0;
             left = right = parent = null;
         }
+
+        @Override
+        public String toString() {
+            return (this.symbol == NYTCode ? "NYT" : this.symbol) + " : " + this.freq + " " + this.code + " " + this.id;
+        }
     }
+
     static boolean[] isTaken = new boolean[MAX];
     static Node root;
     static Node NYT;
-    public static String Encode(String text)throws Exception {
+
+    public static String Encode(String text) throws Exception {
         init();
         StringBuilder ret = new StringBuilder();
-        for (int i = 0 ; i<text.length();++i)
-        {
+        for (int i = 0; i < text.length(); ++i) {
             char letter = text.charAt(i);
             Node curr = find(letter);
-            if (curr == null)
-            {
+            if (curr == null) {
                 ret.append(NYT.code).append(asciiToBinary(letter));
-                curr = insert(NYT,letter);
+                curr = insert(NYT, letter);
                 update(curr.parent);
-            }
-            else
-            {
+                updateCodes();
+            } else {
                 ret.append(curr.code);
                 update(curr);
+                updateCodes();
             }
-            ++curr.freq;
+            //PrintTree(System.out); // -> For Debugging
         }
         return ret.toString();
     }
-//    public static String Decode(String text) throws Exception {
-//        init();
-//        String prefix;
-//        try {
-//            prefix = text.substring(0,8);
-//        }
-//        catch (Exception ex)
-//        {
-//            throw new Exception("Invalid Input.. Please enter valid data");
-//        }
-//        char letter = binaryToAscii(prefix);
-//        StringBuilder ret = new StringBuilder(letter);
-//        prefix = "";
-//        Node curr;
-//        ArrayList<Node> prefixes;
-//        for (int i = 8 ; i<text.length() ; ++i)
-//        {
-//            prefix+=text.charAt(i);
-//            prefixes = find(prefix);
-//            if (prefixes.size() == 0) throw new Exception("Invalid Input.. Please enter valid data");
-//            else if (prefixes.size() == 1)
-//            {
-//                curr = prefixes.get(0);
-//                if (curr.symbol != NYTCode) // try to exchange it with if (curr != NYT)
-//                {
-//                    //@TODO already inserted insertion
-//
-//                }
-//                else
-//                {
-//                    //@TODO first insertion
-//                }
-//            }
-//
-//        }
-//        if (prefix != null)
-//        {
-//
-//        }
-//        return ret.toString();
-//    }
-    private static String asciiToBinary (char c)
-    {
+
+    public static String Decode(String text) throws Exception {
+        init();
+        String prefix;
+        try {
+            prefix = text.substring(0, 8);
+        } catch (Exception ex) {
+            throw new Exception("Invalid Input.. Please enter valid data");
+        }
+        char letter = binaryToAscii(prefix);
+        StringBuilder ret = new StringBuilder(letter);
+        prefix = "";
+        Node curr;
+        for (int i = 8; i < text.length(); ++i) {
+            prefix += text.charAt(i);
+            curr = find(prefix);
+            int nodeStatus = NodeCase(curr);
+            if (nodeStatus == 0) throw new Exception("Invalid Input.. Please enter valid data");
+            else if (nodeStatus == 1) {
+                if (curr.symbol != NYTCode) // try to exchange it with if (curr != NYT)
+                {
+                    //@TODO already inserted
+
+                } else {
+                    //@TODO first insertion
+                }
+            }
+
+        }
+        if (prefix != null) {
+
+        }
+        return ret.toString();
+    }
+
+    private static String asciiToBinary(char c) {
+        if (c == 'a') return "00";
+        if (c == 'b') return "01";
+        if (c == 'c') return "10";
+        // remove above if you won't to implement lecture example
         return Integer.toBinaryString(c);
     }
-    private static char binaryToAscii (String c)
-    {
-        return (char)Integer.parseInt(c, 2);
+
+    private static char binaryToAscii(String c) {
+        return (char) Integer.parseInt(c, 2);
     }
+
     private static void init() // initialize data
     {
-        root = NYT = new Node(NYTCode,StartId,"");
-        Arrays.fill(isTaken,false);
+        root = NYT = new Node(NYTCode, StartId, "");
+        Arrays.fill(isTaken, false);
+        isTaken[StartId] = true;
     }
-    private static Node insert(Node curr,char c)
-    {
-        Node data = new Node(c,getId(curr.id),curr.code+"1");
-        Node nyt = new Node(NYTCode,getId(data.id),curr.code+"0");
+
+    private static Node insert(Node curr, char c) {
+        Node data = new Node(c, getId(curr.id), curr.code + "1");
+        Node nyt = new Node(NYTCode, getId(data.id), curr.code + "0");
         ++data.freq;
-        ++curr.freq; // NYT inc freq
+        ++curr.freq;
         curr.left = nyt;
         curr.right = data;
         data.parent = nyt.parent = curr;
         NYT = nyt;
-        return curr.right;
-    }
-    private static Node update(Node curr)
-    {
-        while (curr != root)
-        {
-            curr = SwapIfYouCan(curr);
-        }
         return curr;
     }
-    private static Node SwapIfYouCan(Node req)
-    {
+
+    private static Node update(Node curr) {
+        while (curr != root && curr != null) {
+            curr = SwapIfYouCan(curr);
+            curr.freq++;
+            curr = curr.parent;
+        }
+        root.freq = root.right.freq + root.left.freq;
+        return curr;
+    }
+
+    private static Node SwapIfYouCan(Node req) {
         Queue<Node> q = new LinkedList<>();
         q.add(root.right);
         q.add(root.left);
-        while (!q.isEmpty())
-        {
+        while (!q.isEmpty()) {
             Node curr = q.remove();
-            q.add(curr.right);
-            q.add(curr.left);
-            if (canBeSwapped(req,curr))
-            {
-                swap(req,curr);
+            if (curr.right != null) q.add(curr.right);
+            if (curr.left != null) q.add(curr.left);
+            if (canBeSwapped(req, curr)) {
+                swap(req, curr);
                 break;
             }
         }
-        return req.parent;
+        return req;
     }
-    private static Node swap (Node from,Node to) // returns the from node
-    {
-        Node temp = new Node(from.symbol,from.id,from.code);
-        temp.freq = from.freq;
-        temp.right = from.right;
-        temp.left = from.left;
-        temp.parent = from.parent;
 
+    private static Node swap(Node from, Node to) // returns the from node
+    {
+        int tempId = from.id;
         from.id = to.id;
+        to.id = tempId;
+
+        String tempCode = from.code;
         from.code = to.code;
-        from.freq = to.freq;
-        from.right = to.right;
-        from.left = to.left;
-        from.parent = to.parent;
+        to.code = tempCode;
 
-        to.id = temp.id;
-        to.code = temp.code;
-        to.freq = temp.freq;
-        to.right = temp.right;
-        to.left = temp.left;
-        to.parent = temp.parent;
+        Node fromParent = from.parent;
+        Node toParent = to.parent;
+        if (fromParent == toParent) {
+            if (fromParent.left == to) {
+                fromParent.right = to;
+                fromParent.left = from;
+            } else {
+                fromParent.right = from;
+                fromParent.left = to;
+            }
+        } else {
+            from.parent = toParent;
+            to.parent = fromParent;
+            if (fromParent.left == from) fromParent.left = to;
+            else fromParent.right = to;
 
-        return from;
+            if (toParent.left == to) toParent.left = from;
+            else toParent.right = from;
+        }
+        return to;
     }
-    private static boolean canBeSwapped(Node from , Node to)
-    {
+
+    private static boolean canBeSwapped(Node from, Node to) {
         return (from.id < to.id && from.freq >= to.freq && from.parent != to && to != root);
     }
-//    private static ArrayList<Node> find (String s , Node curr)
-//    {
-//        //@TODO you must make this function returns list of nodes that can be prefix for that
-//        if (s.isEmpty()) return curr;
-//
-//    }
-//    private static ArrayList<Node> find (String s)
-//    {
-//        return find(s,root);
-//    }
-    private static Node find (char s , Node curr)
-    {
-        if (curr.symbol == s) return curr;
-        if (curr.left != null) return find(s,curr.left);
-        if (curr.right != null) return find(s,curr.right);
-        return null;
+
+    private static Node find(char s, Node curr) {
+        Node ret = null;
+        if (curr.symbol == s) ret = curr;
+        if (curr.left != null && ret == null) ret = find(s, curr.left);
+        if (curr.right != null && ret == null) ret = find(s, curr.right);
+        return ret;
     }
-    private static Node find (char s)
-    {
-        return find(s,root);
+
+    private static Node find(Node curr, String s) {
+        Node ret = null;
+        if (s.isEmpty()) ret = curr;
+        if (s.charAt(0) == '0') ret = find(curr.left,s.substring(1));
+        if (s.charAt(0) == '1') ret = find(curr.right,s.substring(1));
+        return ret;
     }
-    private static int getId(int last)
+
+    private static Node find(String prefix) {
+        return find(root,prefix);
+    }
+    private static int NodeCase (Node curr)
     {
-        while (isTaken[last]){
+        // -1 -> multiple prefixes
+        // 0 -> not found
+        // 1 -> only one
+        if (curr == null) return 0;
+        if (curr.left != null || curr.right != null) return -1;
+        else return 1;
+    }
+    private static Node find(char s) {
+        return find(s, root);
+    }
+
+    private static int getId(int last) {
+        while (isTaken[last]) {
             --last;
         }
         isTaken[last] = true;
         return last;
     }
-    public static void PrintTree(PrintStream out)
-    {
+
+    private static void updateCodes() {
+        updateCode(root, "");
+    }
+
+    private static void updateCode(Node curr, String code) {
+        curr.code = code;
+        if (curr.right != null) updateCode(curr.right, code + "1");
+        if (curr.left != null) updateCode(curr.left, code + "0");
+    }
+
+    //--------------------------------------------------------------------------------------------------------
+//    private static String getCode (Node req,Node curr,String ret)
+//    {
+//        String ans = "";
+//        if (curr == req) ans = ret;
+//        if (curr.right != null && ans.isEmpty()) ans = getCode(req,curr.right,ret+"1");
+//        if (curr.left != null && ans.isEmpty()) ans = getCode(req,curr.left,ret+"0");
+//        return ans;
+//    }
+//    private static String getCode(Node req)
+//    {
+//        return getCode(req,root,"");
+//    }
+//    private static void updateCodes()
+//    {
+//        // @TODO Enhance this function
+//        Queue<Node> q = new LinkedList<>();
+//        q.add(root.right);
+//        q.add(root.left);
+//        while (!q.isEmpty()) {
+//            Node curr = q.remove();
+//            curr.code = getCode(curr);
+//            if (curr.right != null) q.add(curr.right);
+//            if (curr.left != null) q.add(curr.left);
+//        }
+//    }
+    public static void PrintTree(@NotNull PrintStream out) {
+        out.println();
         List<List<String>> lines = new ArrayList<>();
 
         List<Node> level = new ArrayList<>();
@@ -220,7 +284,7 @@ public class Adaptive_Huffman {
                     next.add(null);
                     next.add(null);
                 } else {
-                    String aa = n.symbol + " : " + n.freq;
+                    String aa = n.toString();
                     line.add(aa);
                     if (aa.length() > widest) widest = aa.length();
 
@@ -292,7 +356,7 @@ public class Adaptive_Huffman {
                 for (int k = 0; k < gap1; k++) {
                     out.print(" ");
                 }
-                System.out.print(f);
+                out.print(f);
                 for (int k = 0; k < gap2; k++) {
                     out.print(" ");
                 }
