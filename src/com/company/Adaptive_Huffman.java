@@ -2,20 +2,19 @@ package com.company;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.awt.*;
 import java.io.PrintStream;
 import java.util.*;
 import java.util.List;
 
-public class Adaptive_Huffman {
-    final static char NYTCode = '\r';
-    final static short StartId = 747; // -> lucky number
-    final static short MAX = StartId * 2;
-    final static int ASCIISIZE = 7;
+class Adaptive_Huffman {
+    private final static char NYTCode = '\r';
+    private final static short StartId = 747; // -> lucky number
+    private final static short MAX = StartId * 2;
+    private final static int ASCIISIZE = 7;
     private static class Node {
-        public String code; // Code of encoding value of that symbole
-        public int freq, id;
-        public Node parent, left, right;
+        String code; // Code of encoding value of that symbole
+        int freq, id;
+        Node parent, left, right;
         char symbol; // NYT is defined as "\r" (carriage return) -> can be changed later
 
         Node(char symbol, int id, String code) {
@@ -28,23 +27,25 @@ public class Adaptive_Huffman {
 
         @Override
         public String toString() {
-            return (this.symbol == NYTCode ? "NYT" : this.symbol) + " : " + this.freq + " " + this.code + " " + this.id;
+            return (this.symbol == NYTCode ? "NYT" : this.symbol) + " : " + this.freq + " " + this.id;
         }
     }
 
-    static boolean[] isTaken = new boolean[MAX];
-    static Node root;
-    static Node NYT;
+    private static boolean[] isTaken = new boolean[MAX];
+    private static Node root;
+    private static Node NYT;
 
-    public static String Encode(String text) throws Exception {
+    static String Encode(String text) throws Exception {
         init();
         StringBuilder ret = new StringBuilder();
         for (int i = 0; i < text.length(); ++i) {
             char letter = text.charAt(i);
+            if (letter > 127) throw new Exception("Invalid input.. ascii only is allowed");
             Node curr = find(letter);
             if (curr == null) {
                 ret.append(NYT.code).append(asciiToBinary(letter));
                 curr = insert(NYT, letter);
+                //PrintTree(System.out); // -> For Debugging
                 update(curr.parent);
             } else {
                 ret.append(curr.code);
@@ -55,7 +56,7 @@ public class Adaptive_Huffman {
         return ret.toString();
     }
 
-    public static String Decode(String text) throws Exception {
+    static String Decode(String text) throws Exception {
         init();
         String prefix;
         try {
@@ -128,17 +129,16 @@ public class Adaptive_Huffman {
         return curr;
     }
 
-    private static Node update(Node curr) {
+    private static void update(Node curr) {
         while (curr != root && curr != null) {
-            curr = SwapIfYouCan(curr);
+            SwapIfYouCan(curr);
             curr.freq++;
             curr = curr.parent;
         }
         root.freq = root.right.freq + root.left.freq;
-        return curr;
     }
 
-    private static Node SwapIfYouCan(Node req) {
+    private static void SwapIfYouCan(Node req) {
         Queue<Node> q = new LinkedList<>();
         q.add(root.right);
         q.add(root.left);
@@ -152,10 +152,9 @@ public class Adaptive_Huffman {
                 break;
             }
         }
-        return req;
     }
 
-    private static Node swap(Node from, Node to) // returns the from node
+    private static void swap(Node from, Node to) // returns the from node
     {
         int tempId = from.id;
         from.id = to.id;
@@ -184,7 +183,6 @@ public class Adaptive_Huffman {
             if (toParent.left == to) toParent.left = from;
             else toParent.right = from;
         }
-        return to;
     }
 
     private static boolean canBeSwapped(Node from, Node to) {
@@ -266,7 +264,7 @@ public class Adaptive_Huffman {
 //            if (curr.left != null) q.add(curr.left);
 //        }
 //    }
-    public static void PrintTree(@NotNull PrintStream out) {
+    static void PrintTree(@NotNull PrintStream out) {
         out.println();
         List<List<String>> lines = new ArrayList<>();
 
@@ -326,7 +324,7 @@ public class Adaptive_Huffman {
                         if (line.get(j - 1) != null) {
                             c = (line.get(j) != null) ? '┴' : '┘';
                         } else {
-                            if (j < line.size() && line.get(j) != null) c = '└';
+                            if (line.get(j) != null) c = '└';
                         }
                     }
                     out.print(c);
@@ -351,9 +349,8 @@ public class Adaptive_Huffman {
             }
 
             // print line of numbers
-            for (int j = 0; j < line.size(); j++) {
+            for (String f : line) {
 
-                String f = line.get(j);
                 if (f == null) f = "";
                 int gap1 = (int) Math.ceil(perpiece / 2f - f.length() / 2f);
                 int gap2 = (int) Math.floor(perpiece / 2f - f.length() / 2f);

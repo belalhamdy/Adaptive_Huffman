@@ -13,10 +13,9 @@ public class Main {
                 System.out.println("Enter the text line to encode");
                 String text = in.nextLine();
                 try {
-                    System.out.println(Adaptive_Huffman.Encode(text));
+                    System.out.println("Encoded Text : " + Adaptive_Huffman.Encode(text));
                 } catch (Exception ex) {
                     System.out.println(ex.getMessage());
-                    ex.printStackTrace();
                     continue;
                 }
             }
@@ -24,7 +23,7 @@ public class Main {
                 System.out.println("Enter the encoded bits to decode");
                 String text = in.nextLine();
                 try {
-                    System.out.println(Adaptive_Huffman.Decode(text));
+                    System.out.println("Decoded Text : " + Adaptive_Huffman.Decode(text));
                 } catch (Exception ex) {
                     System.out.println(ex.getMessage());
                     continue;
