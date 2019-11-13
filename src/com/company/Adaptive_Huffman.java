@@ -12,7 +12,7 @@ class Adaptive_Huffman {
     private final static short MAX = StartId * 2;
     private final static int ASCIISIZE = 7;
     private static class Node {
-        String code; // Code of encoding value of that symbole
+        String code; // Code of encoding value of that symbol
         int freq, id;
         Node parent, left, right;
         char symbol; // NYT is defined as "\r" (carriage return) -> can be changed later
